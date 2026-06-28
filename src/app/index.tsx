@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
 import {
   Button,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -17,12 +19,27 @@ export default function LoginScreen() {
   const [message, setMessage] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession();
+
+      if (data.session) {
+        setLoggedIn(true);
+      }
+
+      setCheckingSession(false);
+    }
+
+    checkSession();
+  }, []);
 
   async function sendOtp() {
     setMessage('');
 
     if (!email) {
-      setMessage('Please enter your email address.');
+      setMessage('Voer asseblief jou e-posadres in.');
       return;
     }
 
@@ -36,14 +53,14 @@ export default function LoginScreen() {
     }
 
     setCodeSent(true);
-    setMessage('Login code sent. Please check your email.');
+    setMessage('Aanmeldkode gestuur. Gaan asseblief jou e-pos na.');
   }
 
   async function verifyOtp() {
     setMessage('');
 
     if (!otp) {
-      setMessage('Please enter the login code.');
+      setMessage('Voer asseblief die aanmeldkode in.');
       return;
     }
 
@@ -61,6 +78,24 @@ export default function LoginScreen() {
     setLoggedIn(true);
   }
 
+  async function logout() {
+    await supabase.auth.signOut();
+
+    setLoggedIn(false);
+    setEmail('');
+    setOtp('');
+    setCodeSent(false);
+    setMessage('Jy is uitgeteken.');
+  }
+
+  if (checkingSession) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.subtitle}>Laai GK Centurion...</Text>
+      </View>
+    );
+  }
+
   if (loggedIn) {
     return (
       <View style={styles.container}>
@@ -71,32 +106,39 @@ export default function LoginScreen() {
         />
 
         <Text style={styles.title}>GK Centurion</Text>
-        <Text style={styles.subtitle}>Welcome</Text>
+        <Text style={styles.subtitle}>Welkom</Text>
 
-        <View style={styles.card}>
-         <Button
-  title="Calendar"
-  onPress={() => router.push('/calendar')}
-/>
+       <View style={styles.grid}>
+  <Pressable style={styles.tile} onPress={() => router.push('/calendar')}>
+    <Text style={styles.tileText}>Kalender</Text>
+  </Pressable>
 
-          <View style={styles.spacer} />
+  <Pressable style={styles.tile} onPress={() => router.push('/live')}>
+    <Text style={styles.tileText}>Regstreeks</Text>
+  </Pressable>
 
-          <Button
-            title="Watch Live"
-            onPress={() => router.push('/live')}
-          />
+  <Pressable style={styles.tile} onPress={() => router.push('/notifications')}>
+    <Text style={styles.tileText}>Nuus</Text>
+  </Pressable>
 
-          <View style={styles.spacer} />
+  <Pressable style={styles.tile} onPress={() => {}}>
+    <Text style={styles.tileText}>Stemmings</Text>
+  </Pressable>
 
-     <Button
-  title="Notifications"
-  onPress={() => router.push('/notifications')}
-/>
 
-          <View style={styles.spacer} />
 
-          <Button title="Polls" onPress={() => {}} />
-        </View>
+<Pressable style={styles.tile} onPress={() => router.push('/documents')}>
+  <Text style={styles.tileText}>Dokumente</Text>
+</Pressable>
+
+  <Pressable style={styles.tile} onPress={() => {}}>
+    <Text style={styles.tileText}>Profiel</Text>
+  </Pressable>
+
+  <Pressable style={[styles.tile, styles.logoutTile]} onPress={logout}>
+    <Text style={styles.tileText}>Teken Uit</Text>
+  </Pressable>
+</View>
       </View>
     );
   }
@@ -118,7 +160,7 @@ export default function LoginScreen() {
       <View style={styles.card}>
         <TextInput
           style={styles.input}
-          placeholder="Email address"
+       placeholder="E-posadres"
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
@@ -127,18 +169,18 @@ export default function LoginScreen() {
         />
 
         {!codeSent ? (
-          <Button title="Send Login Code" onPress={sendOtp} />
+   <Button title="Stuur Aanmeldkode" onPress={sendOtp} />
         ) : (
           <>
             <TextInput
               style={styles.input}
-              placeholder="Login code"
+              placeholder="Aanmeldkode"
               keyboardType="number-pad"
               value={otp}
               onChangeText={setOtp}
             />
 
-            <Button title="Verify Code" onPress={verifyOtp} />
+           <Button title="Verifieer Kode" onPress={verifyOtp} />
           </>
         )}
 
@@ -206,6 +248,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333',
   },
+
+grid: {
+  width: '100%',
+  maxWidth: 420,
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: 12,
+},
+
+tile: {
+  width: '30%',
+  aspectRatio: 1,
+  backgroundColor: '#1f6f8b',
+  borderRadius: 12,
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 8,
+},
+
+logoutTile: {
+  backgroundColor: '#b00020',
+},
+
+tileText: {
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
+
+
+
 
   spacer: {
     height: 12,
